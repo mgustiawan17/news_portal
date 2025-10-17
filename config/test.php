@@ -12,6 +12,7 @@ return [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
     ],
+    'defaultRoute' => 'news/index',
     'language' => 'en-US',
     'components' => [
         'db' => $db,

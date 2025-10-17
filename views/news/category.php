@@ -3,6 +3,7 @@
     $js = $exceptionError ? "window.__EXCEPTION__ = '".addslashes($exceptionError)."';" : "window.__EXCEPTION__ = null;";
     $this->registerJs($js, \yii\web\View::POS_HEAD);
 ?>
+
 <h3 class="mb-4 fw-bold">Kategori: <?= ucfirst($category) ?></h3>
 
 <?php if ($apiError): ?>

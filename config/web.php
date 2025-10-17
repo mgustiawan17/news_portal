@@ -27,22 +27,41 @@ $config = [
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
-        'mailer' => [
-            'class' => \yii\symfonymailer\Mailer::class,
-            'viewPath' => '@app/mail',
-            // send all mails to a file by default.
-            'useFileTransport' => true,
-        ],
         'log' => [
             'traceLevel' => YII_DEBUG ? 3 : 0,
             'targets' => [
                 [
                     'class' => 'yii\log\FileTarget',
-                    'levels' => ['error', 'warning'],
+                    'levels' => ['error', 'warning', 'info'],
+                    'logFile' => '@app/runtime/logs/app.log',
                 ],
             ],
         ],
         'db' => $db,
+        'mailer' => [
+            'class' => 'yii\symfonymailer\Mailer',
+            'useFileTransport' => false, // false = kirim ke email beneran
+            'transport' => [
+                'scheme' => 'smtp',
+                'host' => 'smtp.gmail.com',      // bisa pakai smtp-mail.outlook.com atau server SMTP kamu
+                'username' => 'mochhamadgustiawan17@gmail.com',
+                'password' => 'stfhucclilszslaq',
+                'port' => 587,
+                'encryption' => 'tls',
+            ],
+        ],
+        'urlManager' => [
+            'enablePrettyUrl' => true,
+            'showScriptName' => false,
+            'rules' => [
+                'news/search' => 'news/search',
+                'news/category/<category:\w+>' => 'news/category',
+                'news' => 'news/index',
+                'news/my-bookmarks' => 'news/my-bookmarks',
+                'news/my-likes' => 'news/my-likes',
+            ],
+        ],
+
         /*
         'urlManager' => [
             'enablePrettyUrl' => true,

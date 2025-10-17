@@ -17,3 +17,41 @@
     <?= $this->render('news_item', ['article' => $a]) ?>
   <?php endforeach; ?>
 <?php endif; ?>
+
+<?php
+  $this->registerJs(<<<JS
+    $('.btn-bookmark').on('click', function() {
+      const url = $(this).data('url');
+      $.ajax({
+        url: '/news/bookmark',
+        method: 'POST',
+        data: JSON.stringify({ article_url: url }),
+        contentType: 'application/json',
+        success: res => {
+          alert(res.message || 'Bookmark berhasil!');
+        },
+        error: err => alert('Silahkan login terlebih dahulu untuk bookmark.');
+      });
+    });
+
+    $('.btn-thumb-up, .btn-thumb-down').on('click', function() {
+      const url = $(this).data('url');
+      const vote = $(this).hasClass('btn-thumb-up') ? 1 : -1;
+      $.ajax({
+        url: '/news/rate',
+        method: 'POST',
+        data: JSON.stringify({ article_url: url, vote }),
+        contentType: 'application/json',
+        success: res => {
+          if (res.success) {
+            const card = $(this).closest('.card');
+            card.find('.thumb-up-count').text(res.upCount);
+            card.find('.thumb-down-count').text(res.downCount);
+          }
+        },
+        error: () => alert('Silahkan login terlebih dahulu untuk memberikan rating.')
+      });
+    });
+  JS);
+?>
+
