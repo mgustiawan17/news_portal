@@ -1,20 +1,21 @@
 <?php
-use yii\helpers\Html;
-use yii\helpers\Url;
+  use yii\helpers\Html;
+  use yii\helpers\Url;
 
-$article_url = $article['url'] ?? '';
-$img = $article['urlToImage'] ?? null;
-$url = $article['url'] ?? '#';
-$title = $article['title'] ?? 'Tanpa Judul';
-$source = $article['source']['name'] ?? '';
-$author = $article['author'] ?? '';
-$published = isset($article['publishedAt']) ? (new DateTime($article['publishedAt']))->format('Y-m-d H:i') : '';
-$desc = $article['description'] ?? '';
-$content = $article['content'] ?? '';
+  $article_url = $article['url'] ?? '';
+  $img = $article['urlToImage'] ?? null;
+  $url = $article['url'] ?? '#';
+  $title = $article['title'] ?? 'Tanpa Judul';
+  $source = $article['source']['name'] ?? '';
+  $author = $article['author'] ?? '';
+  $published = isset($article['publishedAt']) ? (new DateTime($article['publishedAt']))->format('Y-m-d H:i') : '';
+  $desc = $article['description'] ?? '';
+  $content = $article['content'] ?? '';
+  $article_json = base64_encode(json_encode($article, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
-// counts tersedia jika controller memberikan 'counts' array
-$up = $counts[$article_url]['up'] ?? 0;
-$down = $counts[$article_url]['down'] ?? 0;
+  // counts tersedia jika controller memberikan 'counts' array
+  $up = $counts[$article_url]['up'] ?? 0;
+  $down = $counts[$article_url]['down'] ?? 0;
 ?>
 
 <div class="card mb-3 shadow-sm">
@@ -36,7 +37,7 @@ $down = $counts[$article_url]['down'] ?? 0;
 
       <div class="card-footer bg-white d-flex gap-2 align-items-center">
         <?php if (!Yii::$app->user->isGuest): ?>
-            <button class="btn btn-outline-primary btn-sm btn-bookmark" data-url="<?= Html::encode($article_url) ?>">Bookmark</button>
+            <button class="btn btn-outline-primary btn-sm btn-bookmark" data-url="<?= Html::encode($article_url) ?>" data-article="<?= $article_json ?>">Bookmark</button>
             <button class="btn btn-outline-success btn-sm btn-thumb-up" data-url="<?= Html::encode($article_url) ?>">👍 <span class="thumb-up-count"><?= $up ?></span></button>
             <button class="btn btn-outline-danger btn-sm btn-thumb-down" data-url="<?= Html::encode($article_url) ?>">👎 <span class="thumb-down-count"><?= $down ?></span></button>
         <?php else: ?>
@@ -52,12 +53,28 @@ $down = $counts[$article_url]['down'] ?? 0;
     // Bookmark
     const b = e.target.closest('.btn-bookmark');
     if (b) {
+      let article = {};
+      try {
+        // decode base64 -> parse JSON
+        const decoded = atob(b.dataset.article || '');
+        article = JSON.parse(decoded);
+      } catch (err) {
+        console.error('Gagal parse data-article:', b.dataset.article);
+        alert('Gagal membaca data artikel');
+        return;
+      }
+
       const url = b.dataset.url;
       fetch('<?= \yii\helpers\Url::to(['news/bookmark']) ?>', {
         method: 'POST',
-        headers: {'Content-Type':'application/json','X-CSRF-Token':'<?= Yii::$app->request->csrfToken ?>'},
-        body: JSON.stringify({article_url: url, article: <?= json_encode($article ?? []) ?>})
-      }).then(r=>r.json()).then(j=>{
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': '<?= Yii::$app->request->csrfToken ?>'
+        },
+        body: JSON.stringify({ article_url: url, article })
+      })
+      .then(r => r.json())
+      .then(j => {
         if (j.success) {
           b.classList.remove('btn-outline-primary');
           b.classList.add('btn-primary');
@@ -65,8 +82,8 @@ $down = $counts[$article_url]['down'] ?? 0;
         } else {
           alert(j.message || 'Gagal');
         }
-      }).catch(err=>console.error(err));
-      return;
+      })
+      .catch(err => console.error('Fetch error:', err));
     }
 
     // Thumb up/down
