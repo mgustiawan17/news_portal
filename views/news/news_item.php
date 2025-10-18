@@ -12,11 +12,16 @@
   $desc = $article['description'] ?? '';
   $content = $article['content'] ?? '';
   $article_json = base64_encode(json_encode($article, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+  $isBookmarked = in_array($article['url'], $userBookmarks);
 
   // counts tersedia jika controller memberikan 'counts' array
   $up = $counts[$article_url]['up'] ?? 0;
   $down = $counts[$article_url]['down'] ?? 0;
+  $this->registerJs("
+    window.userBookmarks = " . json_encode($userBookmarks) . ";
+  ");
 ?>
+
 
 <div class="card mb-3 shadow-sm">
   <div class="row g-0">
@@ -37,7 +42,7 @@
 
       <div class="card-footer bg-white d-flex gap-2 align-items-center">
         <?php if (!Yii::$app->user->isGuest): ?>
-            <button class="btn btn-outline-primary btn-sm btn-bookmark" data-url="<?= Html::encode($article_url) ?>" data-article="<?= $article_json ?>">Bookmark</button>
+            <button class="btn btn-sm <?= $isBookmarked ? 'btn-primary' : 'btn-outline-primary' ?> btn-bookmark" data-url="<?= Html::encode($article_url) ?>" data-article="<?= $article_json ?>"><?= $isBookmarked ? 'Bookmarked' : 'Bookmark' ?></button>
             <button class="btn btn-outline-success btn-sm btn-thumb-up" data-url="<?= Html::encode($article_url) ?>">👍 <span class="thumb-up-count"><?= $up ?></span></button>
             <button class="btn btn-outline-danger btn-sm btn-thumb-down" data-url="<?= Html::encode($article_url) ?>">👎 <span class="thumb-down-count"><?= $down ?></span></button>
         <?php else: ?>

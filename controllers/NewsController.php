@@ -99,9 +99,18 @@ class NewsController extends Controller
         $urls = array_values(array_unique(array_filter(array_map(fn($a) => $a['url'] ?? null, $articles))));
         $counts = $this->getRatingCounts($urls);
 
+        $userBookmarks = [];
+        if (!Yii::$app->user->isGuest) {
+            $userBookmarks = Bookmark::find()
+                ->select('article_url')
+                ->where(['user_id' => Yii::$app->user->id])
+                ->column(); // hasilnya: array of URL artikel
+        }
+
         return $this->render('index', [
             'articles' => $articles,
             'counts' => $counts,
+            'userBookmarks' => $userBookmarks,
             'apiError' => $api['status'] !== 200 ? $api : null,
             'exceptionError' => null
         ]);
@@ -121,10 +130,19 @@ class NewsController extends Controller
         $urls = array_values(array_unique(array_filter(array_map(fn($a) => $a['url'] ?? null, $articles))));
         $counts = $this->getRatingCounts($urls);
 
+        $userBookmarks = [];
+        if (!Yii::$app->user->isGuest) {
+            $userBookmarks = Bookmark::find()
+                ->select('article_url')
+                ->where(['user_id' => Yii::$app->user->id])
+                ->column(); // hasilnya: array of URL artikel
+        }
+
         return $this->render('category', [
             'category' => $category,
             'articles' => $articles,
             'counts' => $counts,
+            'userBookmarks' => $userBookmarks,
             'apiError' => $api['status'] !== 200 ? $api : null,
             'exceptionError' => null
         ]);
@@ -171,11 +189,19 @@ class NewsController extends Controller
             // Hitung like/dislike (optional)
             $urls = array_values(array_unique(array_filter(array_map(fn($a) => $a['url'] ?? null, $articles))));
             $counts = $this->getRatingCounts($urls);
+            $userBookmarks = [];
+            if (!Yii::$app->user->isGuest) {
+                $userBookmarks = Bookmark::find()
+                    ->select('article_url')
+                    ->where(['user_id' => Yii::$app->user->id])
+                    ->column(); // hasilnya: array of URL artikel
+            }
 
             return $this->render('search', [
                 'query' => $q,
                 'articles' => $articles,
                 'counts' => $counts,
+                'userBookmarks' => $userBookmarks,
                 'apiError' => null,
                 'exceptionError' => null
             ]);

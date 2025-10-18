@@ -16,6 +16,10 @@
   <div class="text-muted">Tidak ada hasil ditemukan.</div>
 <?php else: ?>
   <?php foreach($articles as $a): ?>
-    <?= $this->render('news_item', ['article' => $a]) ?>
+    <?= $this->render('news_item', [
+          'article' => $a,
+          'userBookmarks' => $userBookmarks ?? [],
+          'counts' => $counts ?? [],
+    ]) ?>
   <?php endforeach; ?>
 <?php endif; ?>
