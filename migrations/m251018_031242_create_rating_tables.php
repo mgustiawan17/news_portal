@@ -2,7 +2,7 @@
 
 use yii\db\Migration;
 
-class m251017_141617_create_rating_tables extends Migration
+class m251018_031242_create_rating_tables extends Migration
 {
     /**
      * {@inheritdoc}
@@ -40,7 +40,7 @@ class m251017_141617_create_rating_tables extends Migration
 
     public function down()
     {
-        echo "m251017_141617_create_rating_tables cannot be reverted.\n";
+        echo "m251018_031242_create_rating_tables cannot be reverted.\n";
 
         return false;
     }
