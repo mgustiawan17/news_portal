@@ -54,66 +54,123 @@
 </div>
 
 <script>
-  document.addEventListener('click', function(e){
-    // Bookmark
+  document.addEventListener('click', async function (e) {
+    // === BOOKMARK HANDLER ===
     const b = e.target.closest('.btn-bookmark');
     if (b) {
+      e.preventDefault();
+
+      // Cegah double klik
+      if (b.dataset.loading === '1') {
+        console.warn('Bookmark sedang diproses, abaikan klik ganda.');
+        return;
+      }
+
       let article = {};
       try {
-        // decode base64 -> parse JSON
         const decoded = atob(b.dataset.article || '');
         article = JSON.parse(decoded);
       } catch (err) {
-        console.error('Gagal parse data-article:', b.dataset.article);
+        console.error('Gagal parse data-article:', b.dataset.article, err);
         alert('Gagal membaca data artikel');
         return;
       }
 
       const url = b.dataset.url;
-      fetch('<?= \yii\helpers\Url::to(['news/bookmark']) ?>', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': '<?= Yii::$app->request->csrfToken ?>'
-        },
-        body: JSON.stringify({ article_url: url, article })
-      })
-      .then(r => r.json())
-      .then(j => {
-        if (j.success) {
-          b.classList.remove('btn-outline-primary');
-          b.classList.add('btn-primary');
-          b.innerText = 'Bookmarked';
+      b.dataset.loading = '1';
+      b.disabled = true;
+      const oldText = b.innerText;
+      b.innerText = 'Menyimpan...';
+
+      try {
+        const response = await fetch('<?= \yii\helpers\Url::to(['news/bookmark']) ?>', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': '<?= Yii::$app->request->csrfToken ?>'
+          },
+          body: JSON.stringify({ article_url: url, article })
+        });
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const j = await response.json();
+
+        if (!j || !j.success) {
+          alert(j?.message || 'Gagal memproses bookmark');
         } else {
-          alert(j.message || 'Gagal');
+          // ✅ Perbaikan logika
+          if (j.removed === true) {
+            // Bookmark dihapus
+            b.classList.remove('btn-primary');
+            b.classList.add('btn-outline-primary');
+            b.innerText = 'Bookmark'; // ← sudah benar
+            if (Array.isArray(window.userBookmarks)) {
+              const idx = window.userBookmarks.indexOf(url);
+              if (idx !== -1) window.userBookmarks.splice(idx, 1);
+            }
+          } else {
+            // Bookmark ditambahkan
+            b.classList.remove('btn-outline-primary');
+            b.classList.add('btn-primary');
+            b.innerText = 'Bookmarked'; // ← sudah benar
+            if (!Array.isArray(window.userBookmarks)) window.userBookmarks = [];
+            if (window.userBookmarks.indexOf(url) === -1) window.userBookmarks.push(url);
+          }
         }
-      })
-      .catch(err => console.error('Fetch error:', err));
+      } catch (err) {
+        console.error('Fetch error bookmark:', err);
+        alert('Terjadi kesalahan jaringan saat menyimpan bookmark.\nSilakan coba lagi nanti.');
+      } finally {
+        setTimeout(() => {
+          b.dataset.loading = '0';
+          b.disabled = false;
+        }, 2000);
+      }
+
+      return;
     }
 
-    // Thumb up/down
+    // === RATING HANDLER ===
     const up = e.target.closest('.btn-thumb-up');
     const down = e.target.closest('.btn-thumb-down');
     if (up || down) {
       const isUp = !!up;
       const btn = isUp ? up : down;
       const url = btn.dataset.url;
-      fetch('<?= \yii\helpers\Url::to(['news/rate']) ?>', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','X-CSRF-Token':'<?= Yii::$app->request->csrfToken ?>'},
-        body: JSON.stringify({article_url: url, vote: isUp ? 1 : -1})
-      }).then(r=>r.json()).then(j=>{
+
+      if (btn.dataset.loading === '1') return;
+      btn.dataset.loading = '1';
+
+      try {
+        const response = await fetch('<?= \yii\helpers\Url::to(['news/rate']) ?>', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': '<?= Yii::$app->request->csrfToken ?>'
+          },
+          body: JSON.stringify({ article_url: url, vote: isUp ? 1 : -1 })
+        });
+
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const j = await response.json();
         if (j.success) {
-          if (j.upCount !== undefined) {
+          if (j.upCount !== undefined)
             btn.parentElement.querySelector('.thumb-up-count').innerText = j.upCount;
-          }
-          if (j.downCount !== undefined) {
+          if (j.downCount !== undefined)
             btn.parentElement.querySelector('.thumb-down-count').innerText = j.downCount;
-          }
         } else {
           alert(j.message || 'Gagal memberi rating');
         }
-      }).catch(err=>console.error(err));
+      } catch (err) {
+        console.error('Fetch error rating:', err);
+        alert('Terjadi kesalahan jaringan saat memberi rating.');
+      } finally {
+        setTimeout(() => {
+          btn.dataset.loading = '0';
+        }, 1500);
+      }
     }
   });
 </script>

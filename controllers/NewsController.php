@@ -237,30 +237,59 @@ class NewsController extends Controller
     public function actionBookmark()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $data = json_decode(Yii::$app->request->getRawBody(), true);
+
+        // hanya user terautentikasi boleh mengakses — AccessControl sudah di-behaviors
         $userId = Yii::$app->user->id;
+        if (!$userId) {
+            return ['success' => false, 'message' => 'Unauthorized'];
+        }
 
-        if (empty($data['article_url'])) throw new BadRequestHttpException('article_url required');
+        $data = json_decode(Yii::$app->request->getRawBody(), true);
+        $articleUrl = $data['article_url'] ?? null;
+        $article = $data['article'] ?? null;
 
-        $url = $data['article_url'];
-        $existing = Bookmark::findOne(['user_id'=>$userId,'article_url'=>$url]);
+        if (empty($articleUrl)) {
+            throw new BadRequestHttpException('article_url required');
+        }
+
+        // Cek existing
+        $existing = Bookmark::findOne(['user_id' => $userId, 'article_url' => $articleUrl]);
 
         if ($existing) {
-            return ['success'=>true,'message'=>'Sudah terbookmark'];
-        }
+            // Hapus bookmark — gunakan ->delete() agar benar-benar hilang dari DB
+            try {
+                $existing->delete();
+                return [
+                    'success' => true,
+                    'removed' => true,
+                    'message' => 'Bookmark dihapus'
+                ];
+            } catch (\Throwable $e) {
+                Yii::error("Gagal menghapus bookmark: " . $e->getMessage(), __METHOD__);
+                return ['success' => false, 'message' => 'Gagal menghapus bookmark'];
+            }
+        } else {
+            // simpan bookmark baru
+            $bm = new Bookmark();
+            $bm->user_id = $userId;
+            $bm->article_url = $articleUrl;
+            $bm->article_title = $article['title'] ?? null;
+            $bm->article_source = $article['source']['name'] ?? null;
+            $bm->article_data = isset($article) ? json_encode($article, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null;
+            $bm->created_at = date('Y-m-d H:i:s');
 
-        $bm = new Bookmark();
-        $bm->user_id = $userId;
-        $bm->article_url = $url;
-        $bm->article_title = $data['article']['title'] ?? null;
-        $bm->article_source = $data['article']['source']['name'] ?? null;
-        $bm->article_data = isset($data['article']) ? json_encode($data['article']) : null;
+            if ($bm->save()) {
+                return [
+                    'success' => true,
+                    'removed' => false,
+                    'message' => 'Berhasil menambah bookmark'
+                ];
+            }
 
-        if ($bm->save()) {
-            return ['success'=>true];
+            // jika gagal validasi
+            Yii::error('Gagal menyimpan bookmark: ' . json_encode($bm->errors), __METHOD__);
+            return ['success' => false, 'message' => 'Gagal menyimpan bookmark'];
         }
-        
-        return ['success'=>false,'message'=>'Gagal menyimpan bookmark'];
     }
 
     // Rate
