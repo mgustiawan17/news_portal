@@ -89,8 +89,10 @@ class AuthController extends Controller
                     Yii::$app->session->setFlash('error', 'Terjadi kesalahan saat mengirim email: ' . $e->getMessage());
                 }
 
-                // ✅ Redirect agar flash muncul di login
-                return $this->redirect(['auth/login']);
+                return $this->render('register_success', [
+                    'user' => $user,
+                    'emailSent' => true
+                ]);
             } else {
                 Yii::$app->session->setFlash('error', 'Gagal menyimpan data pengguna.');
             }
