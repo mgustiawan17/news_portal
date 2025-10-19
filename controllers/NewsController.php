@@ -306,15 +306,19 @@ class NewsController extends Controller
         
         if (!in_array($vote, [1,-1])) throw new BadRequestHttpException('vote invalid');
 
+        // $nowJakarta = (new \DateTime('now', new \DateTimeZone('Asia/Jakarta')))->format('Y-m-d H:i:s');
+
         $existing = Rating::findOne(['user_id'=>$userId,'article_url'=>$url]);
         if ($existing) {
             $existing->vote = $vote;
+            // $existing->updated_at = $nowJakarta;
             $existing->save(false);
         } else {
             $r = new Rating();
             $r->user_id = $userId;
             $r->article_url = $url;
             $r->vote = $vote;
+            // $r->created_at = $nowJakarta;
             $r->save(false);
         }
 
